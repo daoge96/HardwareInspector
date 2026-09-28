@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>HardwareInspector 硬件检测报告</title>
+<style>
+  :root { color-scheme: dark; }
+  body { background:#12161c; color:#e6edf3; font-family:"Segoe UI","Microsoft YaHei",sans-serif; margin:0; padding:32px; }
+  .wrap { max-width:960px; margin:0 auto; }
+  h1 { font-size:24px; margin:0 0 4px; }
+  h2 { font-size:18px; margin:28px 0 10px; border-left:4px solid #3b82f6; padding-left:10px; }
+  h3 { font-size:14px; color:#9aa7b4; margin:14px 0 6px; }
+  .meta { color:#8b98a6; font-size:13px; margin-bottom:16px; }
+  .score-box { background:#1b2230; border:1px solid #29313f; border-radius:10px; padding:18px; margin:18px 0; }
+  .score { font-size:40px; font-weight:700; color:#22c55e; }
+  .grade { font-size:18px; color:#eab308; margin-left:12px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; margin-bottom:8px; }
+  table.kv th { text-align:left; width:180px; color:#9aa7b4; font-weight:500; background:#171d27; }
+  table.kv th, table.kv td { border:1px solid #29313f; padding:6px 10px; }
+  table.grid th { background:#171d27; color:#9aa7b4; }
+  table.grid th, table.grid td { border:1px solid #29313f; padding:6px 10px; text-align:left; }
+  .foot { color:#6b7684; font-size:12px; margin-top:32px; text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>HardwareInspector 硬件检测报告</h1>
+  <div class="meta">生成时间：{{TIMESTAMP}}</div>
+
+  <div class="score-box">
+    <span class="score">{{TOTAL_SCORE}}</span>
+    <span class="grade">等级 {{GRADE}}</span>
+    <p>{{SUMMARY}}</p>
+  </div>
+
+  <h2>CPU</h2>
+  {{CPU_TABLE}}
+
+  <h2>GPU</h2>
+  {{GPU_TABLES}}
+
+  <h2>内存</h2>
+  {{MEM_TABLE}}
+
+  <h2>硬盘</h2>
+  {{DISK_TABLES}}
+
+  <h2>基准测试结果</h2>
+  {{RESULT_TABLE}}
+
+  <div class="foot">HardwareInspector · 由 PySide6 驱动 · 评分仅供参考</div>
+</div>
+</body>
+</html>
