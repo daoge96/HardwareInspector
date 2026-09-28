@@ -12,7 +12,15 @@ from ..core.utils import resource_path
 
 log = get_logger("report")
 
-_FALLBACK = "<html><body><h1>HardwareInspector 报告</h1>{{CONTENT}}</body></html>"
+_FALLBACK = (
+    "<html><head><meta charset='utf-8'></head><body>"
+    "<h1>HardwareInspector 硬件检测报告</h1>"
+    "<p>生成时间：{{TIMESTAMP}}</p>"
+    "<h2>评分 {{TOTAL_SCORE}} （{{GRADE}}）</h2><p>{{SUMMARY}}</p>"
+    "<h2>CPU</h2>{{CPU_TABLE}}<h2>GPU</h2>{{GPU_TABLES}}"
+    "<h2>内存</h2>{{MEM_TABLE}}<h2>硬盘</h2>{{DISK_TABLES}}"
+    "<h2>基准结果</h2>{{RESULT_TABLE}}</body></html>"
+)
 
 
 def _esc(value) -> str:

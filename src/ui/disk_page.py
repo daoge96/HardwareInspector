@@ -1,6 +1,7 @@
 """硬盘页面。"""
 from __future__ import annotations
 
+import os
 import string
 
 from PySide6.QtWidgets import QComboBox, QLabel
@@ -33,6 +34,12 @@ class DiskPage(BasePage):
         self.drive = QComboBox()
         for letter in string.ascii_uppercase:
             self.drive.addItem(f"{letter}:")
+        system_drive = os.environ.get("SystemDrive", "C:")
+        if not system_drive.endswith(":"):
+            system_drive = system_drive + ":"
+        index = self.drive.findText(system_drive)
+        if index >= 0:
+            self.drive.setCurrentIndex(index)
         self.actions.addWidget(QLabel("目标盘符"))
         self.actions.addWidget(self.drive)
         self.btn_bench = self.add_button("开始基准测试", self._on_bench)
@@ -42,6 +49,7 @@ class DiskPage(BasePage):
         self.result.setObjectName("statusLabel")
         self.body.addWidget(self.result)
         self._worker = None
+        self._disks = []
 
     def apply_detection(self, disks) -> None:
         self._disks = disks or []

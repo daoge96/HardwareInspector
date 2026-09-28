@@ -136,9 +136,13 @@ class GpuCanvas(QOpenGLWidget):
 
     def _tick(self) -> None:
         if self._running:
+            self._frame += 1
+            self._total_frames += 1
             total = sum(f for _, f in self._config)
             pct = int(min(99, self._total_frames / max(1, total) * 100))
             self.benchProgress.emit(pct, f"渲染中 {self._total_frames}/{total}")
+            if self._frame >= self._stage_frames:
+                self._advance_stage()
         self.update()
 
     def paintGL(self) -> None:
@@ -155,11 +159,6 @@ class GpuCanvas(QOpenGLWidget):
         self._gl.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
         self._program.release()
         self._vao.release()
-        if self._running:
-            self._frame += 1
-            self._total_frames += 1
-            if self._frame >= self._stage_frames:
-                self._advance_stage()
 
     def resizeGL(self, w: int, h: int) -> None:
         if self._gl is not None:

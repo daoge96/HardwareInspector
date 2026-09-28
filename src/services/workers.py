@@ -46,10 +46,11 @@ class StressWorker(QThread):
     failed = Signal(str)
     sample = Signal(dict)
 
-    def __init__(self, stresser, seconds: int, parent=None) -> None:
+    def __init__(self, stresser, seconds: int, parent=None, **run_kwargs) -> None:
         super().__init__(parent)
         self._stresser = stresser
         self._seconds = max(0, int(seconds))
+        self._run_kwargs = run_kwargs
         self._stop = threading.Event()
 
     def request_stop(self) -> None:
@@ -68,7 +69,10 @@ class StressWorker(QThread):
                 self.sample.emit(payload)
 
             result = self._stresser.run(
-                seconds=self._seconds, on_sample=on_sample, stop_event=self._stop
+                seconds=self._seconds,
+                on_sample=on_sample,
+                stop_event=self._stop,
+                **self._run_kwargs,
             )
             self.finished_ok.emit(result)
         except Exception as exc:  # pragma: no cover
