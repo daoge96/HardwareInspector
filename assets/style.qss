@@ -1,0 +1,128 @@
+/* HardwareInspector 深色主题 */
+QWidget {
+    background-color: #0d1117;
+    color: #c9d1d9;
+    font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+    font-size: 13px;
+}
+
+QMainWindow, QTabWidget::pane {
+    background-color: #0d1117;
+}
+
+QTabBar::tab {
+    background: #161b22;
+    color: #8b949e;
+    padding: 8px 18px;
+    border: 1px solid #21262d;
+    border-bottom: none;
+}
+
+QTabBar::tab:selected {
+    background: #1f6feb;
+    color: #ffffff;
+}
+
+QFrame#card {
+    background-color: #161b22;
+    border: 1px solid #21262d;
+    border-radius: 10px;
+}
+
+QLabel#cardTitle {
+    color: #58a6ff;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+QLabel#keyLabel {
+    color: #8b949e;
+}
+
+QLabel#valLabel {
+    color: #e6edf3;
+}
+
+QLabel#pageTitle {
+    font-size: 18px;
+    font-weight: 600;
+    color: #e6edf3;
+}
+
+QLabel#statValue {
+    font-size: 26px;
+    font-weight: 700;
+    color: #22c55e;
+}
+
+QLabel#statSub {
+    color: #8b949e;
+    font-size: 12px;
+}
+
+QLabel#statusLabel {
+    color: #8b949e;
+}
+
+QPushButton {
+    background-color: #21262d;
+    color: #e6edf3;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 6px 16px;
+}
+
+QPushButton:hover {
+    background-color: #30363d;
+}
+
+QPushButton:pressed {
+    background-color: #1f6feb;
+}
+
+QPushButton:disabled {
+    color: #6b7684;
+    background-color: #171d27;
+}
+
+QProgressBar {
+    border: 1px solid #21262d;
+    border-radius: 6px;
+    background-color: #161b22;
+    text-align: center;
+    color: #e6edf3;
+}
+
+QProgressBar::chunk {
+    background-color: #1f6feb;
+    border-radius: 5px;
+}
+
+QToolBar {
+    background: #161b22;
+    border-bottom: 1px solid #21262d;
+    spacing: 8px;
+}
+
+QStatusBar {
+    background: #161b22;
+    color: #8b949e;
+}
+
+QHeaderView::section {
+    background-color: #161b22;
+    color: #8b949e;
+    border: 1px solid #21262d;
+    padding: 4px;
+}
+
+QComboBox {
+    background-color: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 4px 8px;
+}
+
+QScrollArea {
+    border: none;
+}
