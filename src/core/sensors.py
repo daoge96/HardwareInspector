@@ -1,6 +1,7 @@
-"""传感器聚合：多后端级联读取 CPU/GPU/内存实时指标。"""
+"""传感器聚合：多后端级联读取 CPU/GPU/内存/磁盘实时指标。"""
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from typing import List, Optional
 
@@ -74,9 +75,7 @@ class _NvmlBackend:
             except Exception:
                 pass
             try:
-                reading.temp = float(
-                    pynvml.nvmlDeviceGetTemperature(handle, pynvml.NVML_TEMPERATURE_GPU)
-                )
+                reading.temp = float(pynvml.nvmlDeviceGetTemperature(handle, pynvml.NVML_TEMPERATURE_GPU))
             except Exception:
                 pass
             try:
@@ -90,9 +89,7 @@ class _NvmlBackend:
             except Exception:
                 pass
             try:
-                reading.clock_mhz = float(
-                    pynvml.nvmlDeviceGetClockInfo(handle, pynvml.NVML_CLOCK_GRAPHICS)
-                )
+                reading.clock_mhz = float(pynvml.nvmlDeviceGetClockInfo(handle, pynvml.NVML_CLOCK_GRAPHICS))
             except Exception:
                 pass
             try:
@@ -211,9 +208,7 @@ class _AcpiBackend:
 
     def cpu_temp(self) -> Optional[float]:
         try:
-            rows = self.wmi.query(
-                "SELECT CurrentTemperature FROM MSAcpi_ThermalZoneTemperature", "root\\wmi"
-            )
+            rows = self.wmi.query("SELECT CurrentTemperature FROM MSAcpi_ThermalZoneTemperature", "root\\wmi")
         except Exception:
             return None
         temps: List[float] = []
@@ -245,12 +240,15 @@ class SensorHub:
         self._nvml = _NvmlBackend()
         self._lhm = _LhmBackend(self._wmi)
         self._acpi = _AcpiBackend(self._wmi)
+        self._last_io = None
+        self._last_io_t: Optional[float] = None
 
     def snapshot(self, gpu_count: int = 0) -> dict:
         return {
             "cpu": self._cpu(),
             "gpus": [self._gpu(i) for i in range(max(gpu_count, 0))],
             "mem": self._mem(),
+            "disk_io": self._disk_io(),
         }
 
     def _wmi_cpu_freq(self) -> Optional[float]:
@@ -308,3 +306,23 @@ class SensorHub:
             )
         except Exception:
             return MemReading()
+
+    def _disk_io(self) -> dict:
+        empty = {"read_mb_s": None, "write_mb_s": None}
+        if psutil is None:
+            return empty
+        try:
+            counters = psutil.disk_io_counters()
+            now = time.time()
+        except Exception:
+            return empty
+        if counters is None:
+            return empty
+        result = dict(empty)
+        if self._last_io is not None and self._last_io_t is not None:
+            dt = max(now - self._last_io_t, 1e-6)
+            result["read_mb_s"] = max(0.0, (counters.read_bytes - self._last_io.read_bytes) / dt / 1e6)
+            result["write_mb_s"] = max(0.0, (counters.write_bytes - self._last_io.write_bytes) / dt / 1e6)
+        self._last_io = counters
+        self._last_io_t = now
+        return result
