@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QLabel
 from ..benchmark.gpu_bench import compute_benchmark, make_render_result
 from ..core.config import config
 from ..core.state import app_state
+from ..core.utils import fmt
 from ..hardware.gpu import GpuDetector
 from ..services.runner import registry
 from ..services.workers import BenchmarkWorker
@@ -20,17 +21,22 @@ class GpuPage(BasePage):
         super().__init__("GPU 检测与测试", parent)
         self.info = InfoCard("检测信息")
         self.body.addWidget(self.info)
+        self.metrics = InfoCard("实时指标（功率 / 温度 / 主频 / 有效频率）")
+        self.body.addWidget(self.metrics)
+        self.metrics.set_rows([("功率", "N/A"), ("温度", "N/A"), ("主频", "N/A"), ("有效频率", "N/A")])
         self.canvas = GpuCanvas()
         self.body.addWidget(self.canvas)
         self.chart = RealtimeChart(
             [
                 ("temp", "温度(°C)", "#ef4444", "left"),
                 ("usage", "占用率(%)", "#3b82f6", "left"),
-                ("clock", "核心频率(MHz)", "#22c55e", "right"),
+                ("clock", "主频(MHz)", "#22c55e", "right"),
+                ("power", "功率(W)", "#eab308", "right2"),
             ],
             max_points=int(config().get("chart_points", 120)),
             y_left=(0, 110),
             y_right=(0, 3000),
+            y_right2=(0, 500),
         )
         self.body.addWidget(self.chart)
         self.btn_bench = self.add_button("开始基准测试", self._on_bench)
@@ -53,7 +59,15 @@ class GpuPage(BasePage):
         if not gpus:
             return
         gpu = gpus[0]
-        self.chart.append({"temp": gpu.temp, "usage": gpu.usage, "clock": gpu.clock_mhz})
+        self.chart.append({"temp": gpu.temp, "usage": gpu.usage, "clock": gpu.clock_mhz, "power": gpu.power})
+        self.metrics.set_rows(
+            [
+                ("功率", fmt(gpu.power, " W", 1)),
+                ("温度", fmt(gpu.temp, " °C", 0)),
+                ("主频", fmt(gpu.clock_mhz, " MHz", 0)),
+                ("有效频率", fmt(gpu.effective_mhz, " MHz", 0)),
+            ]
+        )
 
     def _on_bench(self) -> None:
         self.btn_bench.setEnabled(False)

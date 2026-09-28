@@ -4,7 +4,7 @@ from __future__ import annotations
 from PySide6.QtWidgets import QGridLayout
 
 from ..core.state import app_state
-from ..core.utils import human_bytes
+from ..core.utils import fmt, human_bytes
 from .base_page import BasePage
 from .widgets.card import InfoCard, StatCard
 
@@ -42,8 +42,8 @@ class HomePage(BasePage):
         cpu = snap.get("cpu")
         if cpu is not None:
             usage = f"{cpu.usage:.0f}%" if cpu.usage is not None else "N/A"
-            temp = f"{cpu.temp:.0f}°C" if cpu.temp is not None else "N/A"
-            self.cards["cpu"].set_value(usage, f"占用率 · 温度 {temp}")
+            sub = f"占用率 · 温度 {fmt(cpu.temp, ' °C', 0)} · 功率 {fmt(cpu.power, ' W', 0)}"
+            self.cards["cpu"].set_value(usage, sub)
         mem = snap.get("mem")
         if mem is not None and mem.percent is not None:
             used = human_bytes((mem.used_mb or 0) * 1048576)
@@ -53,8 +53,8 @@ class HomePage(BasePage):
         if gpus:
             gpu = gpus[0]
             usage = f"{gpu.usage:.0f}%" if gpu.usage is not None else "N/A"
-            temp = f"{gpu.temp:.0f}°C" if gpu.temp is not None else "N/A"
-            self.cards["gpu"].set_value(usage, f"占用率 · 温度 {temp}")
+            sub = f"占用率 · 温度 {fmt(gpu.temp, ' °C', 0)} · 功率 {fmt(gpu.power, ' W', 0)}"
+            self.cards["gpu"].set_value(usage, sub)
         io = snap.get("disk_io") or {}
         rb = io.get("read_mb_s")
         wb = io.get("write_mb_s")

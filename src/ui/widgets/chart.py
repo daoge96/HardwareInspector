@@ -1,4 +1,4 @@
-"""实时曲线控件（QtCharts）。"""
+"""实时曲线控件（QtCharts，支持左/右/右二三个 Y 轴）。"""
 from __future__ import annotations
 
 from typing import Dict, List, Optional, Tuple
@@ -15,6 +15,7 @@ class RealtimeChart(QChartView):
         max_points: int = 120,
         y_left: Tuple[float, float] = (0.0, 100.0),
         y_right: Optional[Tuple[float, float]] = None,
+        y_right2: Optional[Tuple[float, float]] = None,
         parent=None,
     ) -> None:
         super().__init__(parent)
@@ -33,18 +34,27 @@ class RealtimeChart(QChartView):
         self._axis_x.setRange(0, self._max)
         self._axis_x.setLabelFormat("%d")
         self._axis_x.setLabelsColor(QColor("#8b949e"))
-        self._axis_l = QValueAxis()
-        self._axis_l.setRange(*y_left)
-        self._axis_l.setLabelsColor(QColor("#8b949e"))
         chart.addAxis(self._axis_x, Qt.AlignBottom)
-        chart.addAxis(self._axis_l, Qt.AlignLeft)
 
-        self._axis_r: Optional[QValueAxis] = None
+        self._axes: Dict[str, QValueAxis] = {}
+        axis_l = QValueAxis()
+        axis_l.setRange(*y_left)
+        axis_l.setLabelsColor(QColor("#8b949e"))
+        chart.addAxis(axis_l, Qt.AlignLeft)
+        self._axes["left"] = axis_l
+
         if y_right:
-            self._axis_r = QValueAxis()
-            self._axis_r.setRange(*y_right)
-            self._axis_r.setLabelsColor(QColor("#8b949e"))
-            chart.addAxis(self._axis_r, Qt.AlignRight)
+            axis_r = QValueAxis()
+            axis_r.setRange(*y_right)
+            axis_r.setLabelsColor(QColor("#8b949e"))
+            chart.addAxis(axis_r, Qt.AlignRight)
+            self._axes["right"] = axis_r
+        if y_right2:
+            axis_r2 = QValueAxis()
+            axis_r2.setRange(*y_right2)
+            axis_r2.setLabelsColor(QColor("#8b949e"))
+            chart.addAxis(axis_r2, Qt.AlignRight)
+            self._axes["right2"] = axis_r2
 
         for key, label, color, axis in series_defs:
             series = QLineSeries()
@@ -54,7 +64,8 @@ class RealtimeChart(QChartView):
             series.setPen(pen)
             chart.addSeries(series)
             series.attachAxis(self._axis_x)
-            series.attachAxis(self._axis_l if axis == "left" else (self._axis_r or self._axis_l))
+            target = self._axes.get(axis) or self._axes["left"]
+            series.attachAxis(target)
             self._series[key] = series
 
         self.setChart(chart)

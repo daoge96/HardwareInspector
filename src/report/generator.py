@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import List, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 from ..benchmark.scoring import grade
 from ..core.config import config
@@ -17,6 +17,7 @@ _FALLBACK = (
     "<h1>HardwareInspector 硬件检测报告</h1>"
     "<p>生成时间：{{TIMESTAMP}}</p>"
     "<h2>评分 {{TOTAL_SCORE}} （{{GRADE}}）</h2><p>{{SUMMARY}}</p>"
+    "<h2>实时指标</h2>{{LIVE_TABLE}}"
     "<h2>CPU</h2>{{CPU_TABLE}}<h2>GPU</h2>{{GPU_TABLES}}"
     "<h2>内存</h2>{{MEM_TABLE}}<h2>硬盘</h2>{{DISK_TABLES}}"
     "<h2>基准结果</h2>{{RESULT_TABLE}}</body></html>"
@@ -65,6 +66,7 @@ def generate(
     mem_rows: Sequence[Tuple[str, str]],
     disk_sections: List[Tuple[str, Sequence[Tuple[str, str]]]],
     results: List[dict],
+    live_rows: Optional[Sequence[Tuple[str, str]]] = None,
 ) -> Path:
     scores = [float(r.get("score", 0) or 0) for r in results if not r.get("error")]
     total = round(sum(scores) / len(scores), 1) if scores else 0.0
@@ -83,6 +85,7 @@ def generate(
         "{{SUMMARY}}": _esc(summary),
         "{{TOTAL_SCORE}}": str(total),
         "{{GRADE}}": f"{letter} ({label})",
+        "{{LIVE_TABLE}}": _table(live_rows or []),
         "{{CPU_TABLE}}": _table(cpu_rows),
         "{{GPU_TABLES}}": _sections(gpu_sections),
         "{{MEM_TABLE}}": _table(mem_rows),

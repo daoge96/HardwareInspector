@@ -39,6 +39,7 @@ class ReportPage(BasePage):
         mem = detections.get("mem")
         gpus = detections.get("gpu") or []
         disks = detections.get("disk") or []
+        live = detections.get("live") or []
         gpu_sections = [(g.name or f"GPU {i + 1}", g.rows()) for i, g in enumerate(gpus)]
         disk_sections = [(d.model or f"磁盘 {i + 1}", d.rows()) for i, d in enumerate(disks)]
         path = generate(
@@ -47,6 +48,7 @@ class ReportPage(BasePage):
             mem.rows() if mem else [],
             disk_sections,
             list(app_state.results),
+            live_rows=live,
         )
         self.set_status(f"已生成: {path.name}")
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(path)))

@@ -1,4 +1,4 @@
-"""传感器聚合：多后端级联读取 CPU/GPU/内存/磁盘实时指标。"""
+"""传感器聚合：多后端级联读取 CPU/GPU/内存/磁盘实时指标（含功率/温度/主频/有效频率）。"""
 from __future__ import annotations
 
 import time
@@ -25,7 +25,8 @@ except Exception:  # pragma: no cover
 class CpuReading:
     usage: Optional[float] = None
     temp: Optional[float] = None
-    freq_mhz: Optional[float] = None
+    freq_mhz: Optional[float] = None          # 主频（标称最高频率）
+    effective_mhz: Optional[float] = None     # 有效频率（实际时钟）
     power: Optional[float] = None
 
 
@@ -37,7 +38,9 @@ class GpuReading:
     temp: Optional[float] = None
     mem_used_mb: Optional[float] = None
     mem_total_mb: Optional[float] = None
-    clock_mhz: Optional[float] = None
+    clock_mhz: Optional[float] = None         # 主频（图形时钟）
+    effective_mhz: Optional[float] = None     # 有效频率（SM 时钟/有效时钟）
+    power: Optional[float] = None
     fan_percent: Optional[float] = None
 
 
@@ -90,6 +93,14 @@ class _NvmlBackend:
                 pass
             try:
                 reading.clock_mhz = float(pynvml.nvmlDeviceGetClockInfo(handle, pynvml.NVML_CLOCK_GRAPHICS))
+            except Exception:
+                pass
+            try:
+                reading.effective_mhz = float(pynvml.nvmlDeviceGetClockInfo(handle, pynvml.NVML_CLOCK_SM))
+            except Exception:
+                reading.effective_mhz = reading.clock_mhz
+            try:
+                reading.power = float(pynvml.nvmlDeviceGetPowerUsage(handle) / 1000.0)
             except Exception:
                 pass
             try:
@@ -167,6 +178,30 @@ class _LhmBackend:
                     return float(value)
         return None
 
+    def cpu_effective_clock(self) -> Optional[float]:
+        """CPU 有效频率：优先 Effective Clock，缺失则取各核心时钟均值。"""
+        effective: List[float] = []
+        cores: List[float] = []
+        for row in self._sensors():
+            if row.get("SensorType") != "Clock":
+                continue
+            ident = str(row.get("Identifier") or "").lower()
+            if "/cpu/" not in ident:
+                continue
+            value = row.get("Value")
+            if value is None:
+                continue
+            name = str(row.get("Name") or "").lower()
+            if "effective" in name:
+                effective.append(float(value))
+            elif "core" in name or "bus" not in name:
+                cores.append(float(value))
+        if effective:
+            return max(effective)
+        if cores:
+            return sum(cores) / len(cores)
+        return None
+
     def gpu(self, index: int) -> Optional[GpuReading]:
         rows = [r for r in self._sensors() if "/gpu/" in str(r.get("Identifier") or "").lower()]
         if not rows:
@@ -187,16 +222,24 @@ class _LhmBackend:
             value = row.get("Value")
             if value is None:
                 continue
+            name = str(row.get("Name") or "").lower()
             if sensor_type == "Temperature":
                 reading.temp = float(value)
             elif sensor_type == "Load":
                 reading.usage = float(value)
             elif sensor_type == "Clock":
-                reading.clock_mhz = float(value)
+                if "effective" in name:
+                    reading.effective_mhz = float(value)
+                else:
+                    reading.clock_mhz = float(value)
+            elif sensor_type == "Power":
+                reading.power = float(value)
             elif sensor_type == "Fan":
                 reading.fan_percent = float(value)
-            elif sensor_type == "SmallData" and "memory" in str(row.get("Name") or "").lower():
+            elif sensor_type == "SmallData" and "memory" in name:
                 reading.mem_used_mb = float(value)
+        if reading.effective_mhz is None and reading.clock_mhz is not None:
+            reading.effective_mhz = reading.clock_mhz
         return reading
 
 
@@ -242,6 +285,7 @@ class SensorHub:
         self._acpi = _AcpiBackend(self._wmi)
         self._last_io = None
         self._last_io_t: Optional[float] = None
+        self._cpu_nominal_cache: Optional[float] = None
 
     def snapshot(self, gpu_count: int = 0) -> dict:
         return {
@@ -263,8 +307,19 @@ class SensorHub:
                 return None
         return None
 
+    def _cpu_nominal(self) -> Optional[float]:
+        if self._cpu_nominal_cache is None:
+            try:
+                rows = self._wmi.query("SELECT MaxClockSpeed FROM Win32_Processor")
+                if rows and rows[0].get("MaxClockSpeed"):
+                    self._cpu_nominal_cache = float(rows[0]["MaxClockSpeed"])
+            except Exception:
+                self._cpu_nominal_cache = None
+        return self._cpu_nominal_cache
+
     def _cpu(self) -> CpuReading:
         reading = CpuReading()
+        current: Optional[float] = None
         if psutil is not None:
             try:
                 reading.usage = float(psutil.cpu_percent(interval=None))
@@ -273,11 +328,14 @@ class SensorHub:
             try:
                 freq = psutil.cpu_freq()
                 if freq and freq.current:
-                    reading.freq_mhz = float(freq.current)
+                    current = float(freq.current)
             except Exception:
                 pass
-        if reading.freq_mhz is None:
-            reading.freq_mhz = self._wmi_cpu_freq()
+        if current is None:
+            current = self._wmi_cpu_freq()
+        reading.freq_mhz = self._cpu_nominal()
+        effective = self._lhm.cpu_effective_clock()
+        reading.effective_mhz = effective if effective is not None else current
         reading.temp = self._lhm.cpu_temp()
         if reading.temp is None:
             reading.temp = self._acpi.cpu_temp()

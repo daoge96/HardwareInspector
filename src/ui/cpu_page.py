@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QLabel
 from ..benchmark.cpu_bench import CpuBenchmark
 from ..core.config import config
 from ..core.state import app_state
+from ..core.utils import fmt
 from ..hardware.cpu import CpuDetector
 from ..services.runner import registry
 from ..services.workers import BenchmarkWorker, StressWorker
@@ -20,15 +21,20 @@ class CpuPage(BasePage):
         super().__init__("CPU 检测与测试", parent)
         self.info = InfoCard("检测信息")
         self.body.addWidget(self.info)
+        self.metrics = InfoCard("实时指标（功率 / 温度 / 主频 / 有效频率）")
+        self.body.addWidget(self.metrics)
+        self.metrics.set_rows([("功率", "N/A"), ("温度", "N/A"), ("主频", "N/A"), ("有效频率", "N/A")])
         self.chart = RealtimeChart(
             [
                 ("temp", "温度(°C)", "#ef4444", "left"),
                 ("usage", "占用率(%)", "#3b82f6", "left"),
-                ("freq", "频率(MHz)", "#22c55e", "right"),
+                ("effective", "有效频率(MHz)", "#22c55e", "right"),
+                ("power", "功率(W)", "#eab308", "right2"),
             ],
             max_points=int(config().get("chart_points", 120)),
             y_left=(0, 110),
             y_right=(0, 6000),
+            y_right2=(0, 300),
         )
         self.body.addWidget(self.chart)
         self.btn_bench = self.add_button("开始基准测试", self._on_bench)
@@ -48,7 +54,17 @@ class CpuPage(BasePage):
         cpu = snap.get("cpu")
         if cpu is None:
             return
-        self.chart.append({"temp": cpu.temp, "usage": cpu.usage, "freq": cpu.freq_mhz})
+        self.chart.append(
+            {"temp": cpu.temp, "usage": cpu.usage, "effective": cpu.effective_mhz, "power": cpu.power}
+        )
+        self.metrics.set_rows(
+            [
+                ("功率", fmt(cpu.power, " W", 1)),
+                ("温度", fmt(cpu.temp, " °C", 0)),
+                ("主频", fmt(cpu.freq_mhz, " MHz", 0)),
+                ("有效频率", fmt(cpu.effective_mhz, " MHz", 0)),
+            ]
+        )
 
     def _on_bench(self) -> None:
         self._start(BenchmarkWorker(CpuBenchmark()), is_bench=True)

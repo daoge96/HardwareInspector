@@ -8,7 +8,7 @@ from ..core.config import config
 from ..core.constants import APP_DISPLAY_NAME, APP_VERSION
 from ..core.sensors import SensorHub
 from ..core.state import app_state
-from ..core.utils import is_admin
+from ..core.utils import fmt, is_admin
 from ..services.detection import DetectionWorker
 from ..services.monitor import MonitorService
 from ..services.runner import registry
@@ -90,6 +90,33 @@ class MainWindow(QMainWindow):
         self.gpu.update_snapshot(snap)
         self.mem.update_snapshot(snap)
         self.disk.update_snapshot(snap)
+        app_state.set_detection("live", self._build_live_rows(snap))
+
+    @staticmethod
+    def _build_live_rows(snap: dict) -> list:
+        rows = []
+        cpu = snap.get("cpu")
+        if cpu is not None:
+            rows.extend(
+                [
+                    ("CPU 功率", fmt(cpu.power, " W", 1)),
+                    ("CPU 温度", fmt(cpu.temp, " °C", 0)),
+                    ("CPU 主频", fmt(cpu.freq_mhz, " MHz", 0)),
+                    ("CPU 有效频率", fmt(cpu.effective_mhz, " MHz", 0)),
+                ]
+            )
+        gpus = snap.get("gpus") or []
+        if gpus:
+            gpu = gpus[0]
+            rows.extend(
+                [
+                    ("GPU 功率", fmt(gpu.power, " W", 1)),
+                    ("GPU 温度", fmt(gpu.temp, " °C", 0)),
+                    ("GPU 主频", fmt(gpu.clock_mhz, " MHz", 0)),
+                    ("GPU 有效频率", fmt(gpu.effective_mhz, " MHz", 0)),
+                ]
+            )
+        return rows
 
     def _stop_all(self) -> None:
         registry.stop_all()
