@@ -1,0 +1,7 @@
+PySide6>=6.5.0
+psutil>=5.9.0
+py-cpuinfo>=9.0.0
+pywin32>=306
+nvidia-ml-py>=12.535.108
+numpy>=1.24.0
+pyinstaller>=6.0.0

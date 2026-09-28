@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# 生成的图标与报告
+assets/icon.ico
+reports/
+
+# 日志
+*.log
+
+# IDE
+.idea/
+.vscode/
