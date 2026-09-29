@@ -1,0 +1,129 @@
+HardwareInspector — 使用说明（v2）
+================================================
+
+【这次改了什么】
+原始版本有 9 个问题，全部已修：
+
+ 你提的 4 个
+ 1. CPU 测不出多核性能
+    → 旧版所谓"多核测试"用 pool.map 跑固定作业量，每个进程只有约 15ms 的活，
+      进程启动开销占大头，测出来的"加速比"基本是噪声。
+      现在单核与全核各跑一个稳态窗口，全核 spawn 全部逻辑核心，
+      并用 ready/go 事件把 spawn 启动耗时挡在计时窗口之外，
+      输出真实加速比、对物理核/逻辑核的并行效率。
+ 2. 测试太短、不满载、不严谨
+    → 全部改成"定时窗口 + 稳态取值"：每项先预热（不计分），
+      再跑满一个窗口，期间每 0.5s 采样占用率做饱和校验；
+      内存/硬盘等项重复测量取中位数；速率波动（CV）与占用一起决定
+      【可信度】，占用不够或抖动大就自动降级，不再把受干扰的结果当成绩。
+ 3. 界面不精致
+    → 重做深色主题（统一间距/圆角/字重层级/悬停态/滚动条），
+      新增顶部标题栏与权限、GPU 就绪状态徽章，卡片改为原地更新
+      （旧版每秒 deleteLater 重建全部标签，滚动位置和选中文本都会丢）。
+ 4. 用 硬解密码.py 的算法测 CPU/GPU 解密速度并打分
+    → 新增「解密基准」页，算法就是那份脚本里真正决定破译速度的
+      Office Agile SHA512-KDF 迭代链（SHA512 迭代 spin 次 → 派生 k1/k2 → AES 校验），
+      指标为每秒可尝试的候选密码数，与真实破译吞吐同量纲。
+
+ 我另外补的 5 个（都是实测会出错的真问题）
+ 5. 所有基准都收了 stop_event 却从不检查 —— "停止"按钮对基准测试是假的。
+    现在 CPU/内存/硬盘/GPU 全部响应停止，且中止后已测数据仍然有效。
+ 6. 旧版"GPU 并行计算"其实是 numpy 的 a@b，跑在 CPU 的 BLAS 上，
+    跟显卡没关系。现在结果里明确标注执行设备，真正的显卡算力由 CUDA 内核给出。
+ 7. 内存"读取带宽"测法错误：gather 动作放在计时之外，
+    计时区间里只有对已生成数组的求和。现在整个 gather 都计入，
+    并区分顺序写 / 顺序复制 / 随机读 / 指针追逐延迟。
+ 8. 硬盘测试全部打在页缓存上：写完立刻读（读的是缓存），
+    随机写 20000 次只在最后 fsync 一次（数据被系统缓存吞掉，IOPS 严重虚高）。
+    现在读之前先刷页缓存测冷读，随机写分【缓存口径】和【每 32 次落盘口径】，
+    成绩取落盘口径。另加 QD1/QD32 两档随机读。
+ 9. 每项只测一遍，单次抖动直接进成绩；现在关键项重复取中位数，
+    并给出速率波动率。
+
+【怎么运行】
+推荐：进入 HardwareInspector-便携版 文件夹，双击里面的 HardwareInspector.exe
+      —— 启动约 2 秒。
+备选：根目录的 HardwareInspector.exe 是单文件版（约 254MB），
+      好处是只有一个文件、可以随便拷；代价是每次启动要先把自己解压到临时目录，
+      首次打开要 10~30 秒，而且解密基准 spawn 子进程时开销更大。
+      想快速反复跑测试就用便携版。
+
+程序需要读温度/功率/SMART，内置管理员清单，会弹一次 UAC，点"是"。
+
+exe 没有代码签名，SmartScreen 可能提示"Windows 已保护你的电脑"：
+点"更多信息" → "仍要运行"。
+
+【解密基准怎么用】
+1. 先选「测试强度」：快速 / 标准 / 严格（决定每个窗口的稳态时长与迭代次数）。
+   快速约 15 秒/项，标准约 40 秒/项，严格约 90 秒/项。
+2. 点"开始 CPU 解密基准"或"开始 GPU 解密基准"，也可以点"全部测试"顺序跑。
+3. 结果会给出速度、加速比、并行效率、满载占用、波动率、可信度，
+   并写入「报告」页的 HTML 报告。
+
+【评分基线】
+1000 分 = 参考机（R9 8945HX 32 线程 + RTX 5060 Laptop）的实测水平：
+    单核 16.6 次/秒（spin=10 万）、全核 180 次/秒、GPU 12240 次/秒。
+高于 1000 就是比它快，低于就是比它慢。这比拍脑袋的曲线好对照。
+纯 CPU 破译本来就比 GPU 慢两个数量级，这是算法特性，不是测试错误。
+
+【GPU 部分为什么不用 cupy】
+本机开启了 Smart App Control（应用控制策略），cupy 的
+cupy_backends\cuda\api\_driver_enum*.pyd 被策略拦截，报 WinError 4551，
+整个 cupy 直接导入失败；重装无效，因为这是机器级策略。
+所以改成用 ctypes 直接调随驱动安装、有 NVIDIA 签名的 nvcuda.dll，
+内核以 PTX 形式内嵌（compute_75 / compute_120 两档，驱动 JIT），
+运行时既不需要 CUDA Toolkit 也不需要 nvrtc，exe 里也就没有 cupy。
+
+内核启动前会先和 hashlib 做逐字节对拍（KDF 结果 + AES 校验分支），
+对拍不过直接判失败，不会拿错的结果打分。
+
+【测试时的传感器读数】
+CPU/GPU 温度、功率、有效频率：优先读 LibreHardwareMonitor / OpenHardwareMonitor
+的 WMI（想拿最全的传感器可以先开 LHM）；NVIDIA 显卡走 NVML。
+固件不给的项显示 N/A，属正常。
+
+【文件位置】
+  HardwareInspector-便携版\    ← 推荐，启动快
+  HardwareInspector.exe        ← 单文件版
+  dist\                        ← 打包原始输出
+  src\ assets\ main.py ...      ← 源代码
+  tools\gen_ptx.py            ← 改过 CUDA 内核后重新生成内嵌 PTX
+  使用说明.txt / screenshot.png
+
+程序数据写在（不往 exe 目录写东西，exe 可随意挪）：
+  %APPDATA%\HardwareInspector\config.json        配置
+  %APPDATA%\HardwareInspector\logs\app.log      运行日志
+  %APPDATA%\HardwareInspector\reports\          导出的 HTML 报告
+
+【改代码后重新打包】
+  .venv\Scripts\python.exe -m pip install -r requirements.txt
+  build.bat
+本机 .venv 已装好 Python 3.13 + PySide6 6.11.2 + PyInstaller 6.22.3，可直接复用。
+改了 src\benchmark\cuda_source.py 之后要跑一次：
+  .venv\Scripts\python.exe tools\gen_ptx.py
+它会重新用 nvrtc 编译并更新 src\benchmark\kdf_ptx.py（运行时不需要 nvrtc）。
+
+【一条命令自检（跑通即停，不会长时间压机器）】
+  HardwareInspector-便携版\HardwareInspector.exe --selftest
+  或只测 CPU：  ... --selftest --cpu-only
+它只跑 2 秒窗口，做完就退出，结果写到
+  %APPDATA%\HardwareInspector\logs\selftest.txt
+自检内容：KDF 与 hashlib 逐字节对拍、CPU 多进程 spawn 链路、
+CUDA 内核自检与显卡吞吐；任一环节不过就返回 FAIL。
+
+【本次构建（两个产物都已跑过 --selftest，结果均为 PASS）】
+  来源仓库 : https://github.com/daoge96/HardwareInspector
+  算法参考 : D:\OneDrive\Desktop\硬解密码.py
+
+  便携版自检（完整，含 GPU）：
+      单核 17.28 / 全核 187.3 次/秒，加速比 10.84x，并行效率(对物理核) 67.8%
+      GPU 13295 次/秒，占用 78.8%，内核与 hashlib 逐字节一致 → RESULT: PASS
+  单文件版自检（--cpu-only，含 32 进程 spawn）：
+      耗时 5.4s，全核 188.9 次/秒，加速比 11.09x → RESULT: PASS
+
+  SHA256  单文件版 : 6FBA1745AE79B8F6945363E8C5744D59BC2EB0619C5F2CF2ABACD36B7CD4AEBF
+  SHA256  便携版   : 7B1B6E1709C3F0C92894AF97DB2BB0B265A2CF9513E228D444E4FBBF542E7705
+
+（并行效率对物理核只有约 68% 是正常的：本机 32 逻辑核 = 16 物理核 + SMT，
+  而且测量时后台还挂着 LightStudio / OMEN Command Center / DSH 等负载，
+  全核期占用 76~82% 也反映了这一点。拿去空载机器上跑会更高。）

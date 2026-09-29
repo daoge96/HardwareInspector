@@ -1,9 +1,11 @@
-"""页面基类。"""
+"""页面基类：统一标题区、进度区与按钮区。"""
 from __future__ import annotations
 
 from typing import List
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QFrame,
     QHBoxLayout,
     QLabel,
     QProgressBar,
@@ -14,35 +16,54 @@ from PySide6.QtWidgets import (
 
 
 class BasePage(QWidget):
-    def __init__(self, title: str, parent=None) -> None:
+    def __init__(self, title: str, subtitle: str = "", parent=None) -> None:
         super().__init__(parent)
         self.root = QVBoxLayout(self)
-        self.root.setContentsMargins(16, 16, 16, 16)
-        self.root.setSpacing(10)
+        self.root.setContentsMargins(20, 18, 20, 18)
+        self.root.setSpacing(14)
+
+        header = QVBoxLayout()
+        header.setSpacing(3)
         self.header = QLabel(title)
         self.header.setObjectName("pageTitle")
-        self.root.addWidget(self.header)
+        header.addWidget(self.header)
+        self.subtitle = QLabel(subtitle)
+        self.subtitle.setObjectName("pageSubtitle")
+        self.subtitle.setWordWrap(True)
+        self.subtitle.setVisible(bool(subtitle))
+        header.addWidget(self.subtitle)
+        self.root.addLayout(header)
+
         self.body = QVBoxLayout()
-        self.body.setSpacing(10)
+        self.body.setSpacing(12)
         self.root.addLayout(self.body)
         self.root.addStretch(1)
+
         self.actions = QHBoxLayout()
+        self.actions.setSpacing(8)
         self.buttons: List[QPushButton] = []
         self.root.addLayout(self.actions)
+
+        bar = QFrame()
+        bar.setObjectName("statusBarCard")
+        bottom = QHBoxLayout(bar)
+        bottom.setContentsMargins(12, 8, 12, 8)
+        bottom.setSpacing(12)
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
         self.progress.setValue(0)
-        self.progress.setMaximumWidth(360)
+        self.progress.setFixedWidth(240)
+        self.progress.setTextVisible(False)
+        bottom.addWidget(self.progress)
         self.status = QLabel("就绪")
         self.status.setObjectName("statusLabel")
-        bottom = QHBoxLayout()
-        bottom.addWidget(self.progress)
-        bottom.addWidget(self.status)
-        bottom.addStretch(1)
-        self.root.addLayout(bottom)
+        bottom.addWidget(self.status, 1)
+        self.root.addWidget(bar)
 
-    def add_button(self, text: str, slot) -> QPushButton:
+    def add_button(self, text: str, slot, kind: str = "") -> QPushButton:
         button = QPushButton(text)
+        if kind:
+            button.setObjectName(kind)
         button.clicked.connect(slot)
         self.actions.addWidget(button)
         self.buttons.append(button)
@@ -55,3 +76,9 @@ class BasePage(QWidget):
 
     def set_status(self, message: str) -> None:
         self.status.setText(message)
+
+    def set_busy(self, busy: bool) -> None:
+        for b in self.buttons:
+            if b.property("alwaysEnabled"):
+                continue
+            b.setEnabled(not busy)

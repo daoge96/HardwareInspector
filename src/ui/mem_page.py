@@ -17,7 +17,11 @@ from .widgets.chart import RealtimeChart
 
 class MemPage(BasePage):
     def __init__(self, parent=None) -> None:
-        super().__init__("内存检测与测试", parent)
+        super().__init__(
+            "内存检测与测试",
+            "容量 / 通道 / 频率 / 时序 / 颗粒厂商，带宽与延迟基准，满载分配写入校验。",
+            parent,
+        )
         self.info = InfoCard("检测信息")
         self.body.addWidget(self.info)
         self.chart = RealtimeChart(

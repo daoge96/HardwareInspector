@@ -10,6 +10,10 @@ build/
 dist/
 *.spec
 
+# 打包产物（单文件 exe 243MB / 便携版 638MB，放 Releases 更合适）
+HardwareInspector.exe
+HardwareInspector-便携版/
+
 # 生成的图标与报告
 assets/icon.ico
 reports/

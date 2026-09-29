@@ -35,6 +35,17 @@ class AppConfig:
     disk_bench_random_ops: int = 20000
     gpu_bench_frames: int = 600
 
+    # 解密基准（Office Agile SHA512-KDF）—— 必须在此登记，
+    # 否则 Config.set() 会因 hasattr 为假而静默丢弃
+    crypto_bench_spin: int = 100_000
+    crypto_bench_seconds: float = 15.0
+    crypto_bench_warmup: float = 2.0
+    bench_repeats: int = 3
+    bench_preset: str = "standard"
+    cpu_phase_seconds: float = 6.0
+    gpu_phase_seconds: float = 6.0
+    bench_saturation_check: bool = True
+
 
 class Config:
     _lock = threading.RLock()
@@ -96,6 +107,40 @@ class Config:
         d = Path(self.get("report_dir") or (self._dir / "reports"))
         d.mkdir(parents=True, exist_ok=True)
         return d
+
+
+# 测试强度预设：控制各基准的稳态窗口长度与作业规模
+BENCH_PRESETS = {
+    "quick": {
+        "label": "快速（约 15 秒/项）",
+        "crypto_bench_seconds": 5.0, "crypto_bench_warmup": 1.0, "crypto_bench_spin": 50_000,
+        "cpu_phase_seconds": 3.0, "gpu_phase_seconds": 3.0,
+        "mem_bench_block_mb": 256, "disk_bench_file_mb": 256, "bench_repeats": 2,
+    },
+    "standard": {
+        "label": "标准（约 40 秒/项）",
+        "crypto_bench_seconds": 15.0, "crypto_bench_warmup": 2.0, "crypto_bench_spin": 100_000,
+        "cpu_phase_seconds": 6.0, "gpu_phase_seconds": 6.0,
+        "mem_bench_block_mb": 512, "disk_bench_file_mb": 512, "bench_repeats": 3,
+    },
+    "strict": {
+        "label": "严格（约 90 秒/项）",
+        "crypto_bench_seconds": 30.0, "crypto_bench_warmup": 3.0, "crypto_bench_spin": 100_000,
+        "cpu_phase_seconds": 10.0, "gpu_phase_seconds": 10.0,
+        "mem_bench_block_mb": 1024, "disk_bench_file_mb": 1024, "bench_repeats": 5,
+    },
+}
+
+
+def apply_preset(name: str) -> None:
+    """套用测试强度预设。"""
+    preset = BENCH_PRESETS.get(name) or BENCH_PRESETS["standard"]
+    cfg = config()
+    for key, value in preset.items():
+        if key != "label":
+            cfg.set(key, value)
+    cfg.set("bench_preset", name)
+    cfg.save()
 
 
 def config() -> Config:

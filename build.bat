@@ -21,6 +21,10 @@ python -m PyInstaller --noconfirm --clean --onefile --windowed --uac-admin ^
   --hidden-import PySide6.QtOpenGL ^
   --hidden-import PySide6.QtOpenGLWidgets ^
   --collect-submodules PySide6 ^
+  --exclude-module cupy ^
+  --exclude-module cuda ^
+  --exclude-module scipy ^
+  --exclude-module matplotlib ^
   main.py
 if errorlevel 1 goto :error
 

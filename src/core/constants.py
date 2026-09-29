@@ -3,7 +3,7 @@ from __future__ import annotations
 
 APP_NAME = "HardwareInspector"
 APP_DISPLAY_NAME = "硬件检测与基准测试工具"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"
 ORG_NAME = "HardwareInspector"
 
 # 单位

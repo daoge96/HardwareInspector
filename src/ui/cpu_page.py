@@ -18,7 +18,11 @@ from .widgets.chart import RealtimeChart
 
 class CpuPage(BasePage):
     def __init__(self, parent=None) -> None:
-        super().__init__("CPU 检测与测试", parent)
+        super().__init__(
+            "CPU 检测与测试",
+            "型号 / 核心线程 / 缓存 / 架构，单核与全核基准，满载稳定性与功率温度曲线。",
+            parent,
+        )
         self.info = InfoCard("检测信息")
         self.body.addWidget(self.info)
         self.metrics = InfoCard("实时指标（功率 / 温度 / 主频 / 有效频率）")

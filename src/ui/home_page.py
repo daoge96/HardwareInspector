@@ -11,7 +11,11 @@ from .widgets.card import InfoCard, StatCard
 
 class HomePage(BasePage):
     def __init__(self, parent=None) -> None:
-        super().__init__("系统总览", parent)
+        super().__init__(
+            "系统总览",
+            "各硬件关键状态实时刷新，含功率与温度。",
+            parent,
+        )
         grid = QGridLayout()
         grid.setSpacing(12)
         self.cards = {}

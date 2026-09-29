@@ -19,7 +19,11 @@ from .widgets.chart import RealtimeChart
 
 class DiskPage(BasePage):
     def __init__(self, parent=None) -> None:
-        super().__init__("硬盘检测与测试", parent)
+        super().__init__(
+            "硬盘检测与测试",
+            "型号 / 容量 / 接口 / SMART 健康，顺序与 4K 随机读写基准。",
+            parent,
+        )
         self.info = InfoCard("检测信息")
         self.body.addWidget(self.info)
         self.chart = RealtimeChart(

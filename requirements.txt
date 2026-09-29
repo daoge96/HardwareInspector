@@ -1,7 +1,19 @@
+# ---- 运行时依赖 ----
 PySide6>=6.5.0
 psutil>=5.9.0
 py-cpuinfo>=9.0.0
 pywin32>=306
 nvidia-ml-py>=12.535.108
 numpy>=1.24.0
+
+# ---- 打包 ----
 pyinstaller>=6.0.0
+
+# ---- 只在需要重新生成 CUDA 内核 PTX 时才要（tools/gen_ptx.py）----
+# 运行时用的是内嵌 PTX，交给显卡驱动 JIT，所以 exe 里不需要它们。
+# nvidia-cuda-nvrtc
+# nvidia-cuda-runtime
+#
+# ---- 可选：cupy，本项目【不用】（Smart App Control 会拦截 cupy 的
+#      _driver_enum*.pyd，WinError 4551），改用 ctypes 直接调 nvcuda.dll。
+# cupy-cuda13x

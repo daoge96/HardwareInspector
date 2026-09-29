@@ -18,7 +18,11 @@ from .widgets.gpu_canvas import GpuCanvas
 
 class GpuPage(BasePage):
     def __init__(self, parent=None) -> None:
-        super().__init__("GPU 检测与测试", parent)
+        super().__init__(
+            "GPU 检测与测试",
+            "型号 / 显存 / 驱动 / 流处理器，OpenGL 渲染与并行计算基准，功率温度曲线。",
+            parent,
+        )
         self.info = InfoCard("检测信息")
         self.body.addWidget(self.info)
         self.metrics = InfoCard("实时指标（功率 / 温度 / 主频 / 有效频率）")

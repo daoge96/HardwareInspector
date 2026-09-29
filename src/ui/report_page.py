@@ -13,7 +13,11 @@ from .base_page import BasePage
 
 class ReportPage(BasePage):
     def __init__(self, parent=None) -> None:
-        super().__init__("评分报告", parent)
+        super().__init__(
+            "评分报告",
+            "汇总各模块成绩，导出带实时指标的 HTML 报告。",
+            parent,
+        )
         self.table = QTableWidget(0, 3)
         self.table.setHorizontalHeaderLabels(["项目", "得分", "详情 / 错误"])
         self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)

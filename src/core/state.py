@@ -26,7 +26,14 @@ class AppState:
             self.detections[key] = value
 
     def add_result(self, result: Dict[str, Any]) -> None:
+        """同 key 的结果覆盖旧的（重跑一次不应该在报告里出现两条）。"""
         with self._lock:
+            key = result.get("key")
+            if key:
+                for i, old in enumerate(self.results):
+                    if old.get("key") == key:
+                        self.results[i] = result
+                        return
             self.results.append(result)
 
     def clear(self) -> None:
