@@ -4,6 +4,17 @@
 
 HardwareInspector 是一款面向 Windows 10/11 的硬件信息与性能测试工具：一键检测 CPU / GPU / 内存 / 硬盘详细规格，提供**基于真实破译吞吐的 CPU/GPU 解密基准**、多线程综合基准、压力稳定性测试、实时功率/温度/主频/有效频率曲线，并可导出 HTML 评分报告，支持打包为单文件 exe（带管理员权限）。
 
+## ⬇️ 下载
+
+**[→ Releases v1.1.0](https://github.com/daoge96/HardwareInspector/releases/tag/v1.1.0)**
+
+| 文件 | 说明 |
+| --- | --- |
+| HardwareInspector-1.1.0-portable.zip | **推荐**。解压后双击里面的 exe，启动约 2 秒 |
+| HardwareInspector.exe | 单文件版 243MB，便于拷贝；首次启动要先自解压，约 10~30 秒 |
+
+两个产物都跑过内置短自检（KDF 与 hashlib 逐字节对拍 + 32 进程 spawn + CUDA 内核自检），结果均为 PASS。
+
 ## 🆕 v1.1.0 主要变更
 
 ### 新增：解密基准（CPU / GPU）
