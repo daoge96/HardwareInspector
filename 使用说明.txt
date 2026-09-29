@@ -41,12 +41,12 @@ HardwareInspector — 使用说明（v2）
     并给出速率波动率。
 
 【怎么运行】
-推荐：进入 HardwareInspector-便携版 文件夹，双击里面的 HardwareInspector.exe
-      —— 启动约 2 秒。
-备选：根目录的 HardwareInspector.exe 是单文件版（约 254MB），
-      好处是只有一个文件、可以随便拷；代价是每次启动要先把自己解压到临时目录，
-      首次打开要 10~30 秒，而且解密基准 spawn 子进程时开销更大。
-      想快速反复跑测试就用便携版。
+双击本文件夹里的 HardwareInspector.exe 就行（243MB，单文件，v1.1.0）。
+它会先把自身解压到临时目录再启动，大约 5~10 秒出窗口（含一次 UAC），之后就正常了。
+
+本机只留了这一个版本；GitHub 的 Releases 上另外还挂着一个便携版 zip
+（解压即用、启动约 2 秒），需要的话去这里下：
+  https://github.com/daoge96/HardwareInspector/releases/tag/v1.1.0
 
 程序需要读温度/功率/SMART，内置管理员清单，会弹一次 UAC，点"是"。
 
@@ -83,12 +83,12 @@ CPU/GPU 温度、功率、有效频率：优先读 LibreHardwareMonitor / OpenHa
 固件不给的项显示 N/A，属正常。
 
 【文件位置】
-  HardwareInspector-便携版\    ← 推荐，启动快
-  HardwareInspector.exe        ← 单文件版
-  dist\                        ← 打包原始输出
+  HardwareInspector.exe        ← 双击运行的就是它
   src\ assets\ main.py ...      ← 源代码
   tools\gen_ptx.py            ← 改过 CUDA 内核后重新生成内嵌 PTX
+  .venv\                       ← 重新打包用的 Python 环境（约 830MB，只想用不想改可以删）
   使用说明.txt / screenshot.png
+  （dist\ 是打包原始输出，重新打包时才会生成，本机已清掉）
 
 程序数据写在（不往 exe 目录写东西，exe 可随意挪）：
   %APPDATA%\HardwareInspector\config.json        配置
